@@ -31,11 +31,11 @@ namespace I72_Backend.Services
         {
             var tokenValidationParameters = new TokenValidationParameters
             {
-                ValidateAudience = false, // You might want to validate this depending on your setup
-                ValidateIssuer = false,   // Same for issuer
+                ValidateAudience = false, 
+                ValidateIssuer = false,  
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-                ValidateLifetime = false // We only want to get claims from the expired token, so don't validate the lifetime
+                ValidateLifetime = false 
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
