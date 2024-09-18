@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Slashy\\source\\repos\\I72_Backend\\I72_Backend.csproj": {}
+    "C:\\Users\\chong\\Source\\Repos\\i71\\I72_Backend.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Slashy\\source\\repos\\I72_Backend\\I72_Backend.csproj": {
+    "C:\\Users\\chong\\Source\\Repos\\i71\\I72_Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Slashy\\source\\repos\\I72_Backend\\I72_Backend.csproj",
+        "projectUniqueName": "C:\\Users\\chong\\Source\\Repos\\i71\\I72_Backend.csproj",
         "projectName": "I72_Backend",
-        "projectPath": "C:\\Users\\Slashy\\source\\repos\\I72_Backend\\I72_Backend.csproj",
-        "packagesPath": "C:\\Users\\Slashy\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Slashy\\source\\repos\\I72_Backend\\obj\\",
+        "projectPath": "C:\\Users\\chong\\Source\\Repos\\i71\\I72_Backend.csproj",
+        "packagesPath": "C:\\Users\\chong\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\chong\\Source\\Repos\\i71\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Slashy\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\chong\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],

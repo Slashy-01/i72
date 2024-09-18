@@ -36,6 +36,23 @@ namespace I72_Backend.Controllers
             return Ok(users);
         }
 
+        [AllowAnonymous]
+		[HttpGet("List")]
+        public ActionResult<IEnumerable<User>> GetUserList()
+        {
+			// Fetch the list of users from the repository
+			var users = _userRepository.GetUsers().Select(user => new UserDTO
+			{
+				Id = user.Id,
+				Username = user.Username,
+				FirstName = user.FirstName,
+				LastName = user.LastName,
+				Phone = user.Phone,
+				Role = user.Role
+			});
+			return Ok(users);
+        }
+
         // GET: api/User/{username}
         // This endpoint is accessible to Admin only.
         [Authorize(Roles = "Admin")]
@@ -128,8 +145,21 @@ namespace I72_Backend.Controllers
             // Hash the user's password
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
-            // Assign a default role if none is provided
-            if (string.IsNullOrWhiteSpace(user.Role))
+            if (string.IsNullOrWhiteSpace(user.FirstName))
+            {
+                return Conflict("Enter your first name");
+            }
+			if (string.IsNullOrWhiteSpace(user.LastName))
+			{
+				return Conflict("Enter your last name");
+			}
+			if (string.IsNullOrWhiteSpace(user.Phone))
+			{
+				return Conflict("Enter your phone number");
+			}
+
+			// Assign a default role if none is provided
+			if (string.IsNullOrWhiteSpace(user.Role))
             {
                 user.Role = "Staff"; // Default to "Staff"
             }

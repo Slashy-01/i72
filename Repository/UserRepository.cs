@@ -21,7 +21,13 @@ namespace I72_Backend.Repository
             return _context.Users.OrderBy(p => p.Id).ToList();
         }
 
-        public User GetUserByUsername(string username)
+		public ICollection<User> GetUserList()
+		{
+			var apples = _context.Users.OrderBy(p => p.Id).ToList();
+            return _context.Users.OrderBy(p => p.Id).ToList();
+		}
+
+		public User GetUserByUsername(string username)
         {
             return _context.Users.SingleOrDefault(u => u.Username == username);
 
