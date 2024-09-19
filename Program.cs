@@ -40,8 +40,6 @@ namespace I72_Backend
 
             builder.Services.AddControllers();
 
-			builder.Services.AddScoped<IDynamicRepository, DynamicRepository>();
-
 			builder.Services.AddScoped<IUserRepository, UserRepository>();
 			builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddDbContext<DB_Context>(options =>
