@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace I72_Backend.Migrations
 {
     [DbContext(typeof(DB_Context))]
-    [Migration("20240909114307_User_db")]
-    partial class User_db
+    [Migration("20240919083312_AddUserFields")]
+    partial class AddUserFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -34,6 +34,9 @@ namespace I72_Backend.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RefreshToken")
                         .HasColumnType("longtext");
 
                     b.Property<string>("Role")

@@ -3,10 +3,11 @@ using I72_Backend.Model;
 using I72_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace I72_Backend.Controllers
 {
@@ -16,153 +17,217 @@ namespace I72_Backend.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly ITokenService _tokenService;
+        private readonly ILogger<UserController> _logger;
 
-        // Constructor to inject dependencies
-        public UserController(IUserRepository userRepository, ITokenService tokenService)
+        public UserController(IUserRepository userRepository, ITokenService tokenService, ILogger<UserController> logger)
         {
-            _userRepository = userRepository;
-            _tokenService = tokenService;
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
 
-        // GET: api/User
-        // This endpoint is accessible to both Admin and Staff roles.
         [Authorize(Roles = "Admin,Staff")]
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public ActionResult<IEnumerable<User>> GetUsers()
         {
-            // Fetch the list of users from the repository
-            var users = _userRepository.GetUsers();
-            return Ok(users);
-        }
-
-        // GET: api/User/{username}
-        // This endpoint is accessible to Admin only.
-        [Authorize(Roles = "Admin")]
-        [HttpGet("{username}")]
-        public ActionResult<User> GetUserByUsername(string username)
-        {
-            // Fetch a user by username from the repository
-            var user = _userRepository.GetUserByUsername(username?.Trim().ToLower());
-            if (user == null)
-            {
-                return NotFound();
-            }
-            return Ok(user);
-        }
-
-        // POST: api/User/login
-        // This endpoint is accessible to everyone (AllowAnonymous).
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public ActionResult Login([FromBody] LoginRequest loginRequest)
-        {
-            // Verify user credentials
-            var user = _userRepository.GetUserByUsername(loginRequest.Username?.Trim().ToLower());
-            if (user == null || !_userRepository.VerifyPassword(loginRequest.Password, user.Password))
-            {
-                return Unauthorized("Invalid credentials");
-            }
-
-            // Generate a new JWT token and refresh token
-            var tokenString = _tokenService.GenerateNewToken(user);
-            var refreshToken = _tokenService.GenerateRefreshToken();
-            var encodedRefreshToken = _tokenService.EncodeRefreshToken(refreshToken);
-
-            // Store the refresh token for the user
-            _userRepository.SetUserRefreshToken(user.Username, encodedRefreshToken);
-
-            return Ok(new
-            {
-                Token = tokenString,
-                RefreshToken = refreshToken
-            });
-        }
-
-        // POST: api/User/refresh
-        // This endpoint is accessible to everyone (AllowAnonymous).
-        [AllowAnonymous]
-        [HttpPost("refresh")]
-        public ActionResult Refresh([FromBody] TokenRefreshRequest request)
-        {
-            // Validate the provided refresh token and generate a new token
-            var principal = _tokenService.GetPrincipalFromExpiredToken(request.Token);
-            var username = principal.Identity.Name;
-
-            var user = _userRepository.GetUserByUsername(username);
-            if (user == null || !_tokenService.ValidateRefreshToken(user.RefreshToken, request.RefreshToken))
-            {
-                return Unauthorized("Invalid refresh token");
-            }
-
-            var newToken = _tokenService.GenerateNewToken(user);
-            var newRefreshToken = _tokenService.GenerateRefreshToken();
-            var encodedNewRefreshToken = _tokenService.EncodeRefreshToken(newRefreshToken);
-
-            // Update the user's refresh token
-            _userRepository.SetUserRefreshToken(username, encodedNewRefreshToken);
-
-            return Ok(new
-            {
-                Token = newToken,
-                RefreshToken = newRefreshToken  // Send the new refresh token back to the client
-            });
-        }
-
-        // POST: api/User/register
-        // This endpoint is accessible to Admin only.
-        [Authorize(Roles = "Admin")]
-        [HttpPost("register")]
-        public ActionResult Register([FromBody] User user)
-        {
-            // Normalize the username
-            user.Username = user.Username?.Trim().ToLower();
-
-            // Check if the username already exists
-            var existingUser = _userRepository.GetUserByUsername(user.Username);
-            if (existingUser != null)
-            {
-                return Conflict("Username already exists");
-            }
-
-            // Hash the user's password
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-
-            // Assign a default role if none is provided
-            if (string.IsNullOrWhiteSpace(user.Role))
-            {
-                user.Role = "Staff"; // Default to "Staff"
-            }
-
-            // Add the new user to the repository
-            _userRepository.AddUser(user);
-
-            return Ok(new { Message = "User registered successfully" });
-        }
-
-        // DELETE: api/User/{id}
-        // This endpoint is accessible to Admin only.
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public ActionResult DeleteUserById(int id)
-        {
-            // Fetch the user by ID
-            var user = _userRepository.GetUserById(id);
-            if (user == null)
-            {
-                return NotFound($"Failed to delete the user with ID {id}. User not found.");
-            }
-
             try
             {
-                // Delete the user from the repository
+                var users = _userRepository.GetUsers();
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching users");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [Authorize(Roles = "Admin,Staff")]
+        [HttpGet("List")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public ActionResult<IEnumerable<UserDetails>> GetUserList()
+        {
+            try
+            {
+                var users = _userRepository.GetUsers().Select(user => new UserDetails
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Phone = user.Phone,
+                    Role = user.Role
+                });
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching user list");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{username}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<User> GetUserByUsername(string username)
+        {
+            try
+            {
+                var user = _userRepository.GetUserByUsername(username?.Trim().ToLower());
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurred while fetching user with username: {username}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public ActionResult Login([FromBody] LoginRequest loginRequest)
+        {
+            try
+            {
+                var user = _userRepository.GetUserByUsername(loginRequest.Username?.Trim().ToLower());
+                if (user == null || !_userRepository.VerifyPassword(loginRequest.Password, user.Password))
+                {
+                    return Unauthorized("Invalid credentials");
+                }
+
+                var tokenString = _tokenService.GenerateNewToken(user);
+                var refreshToken = _tokenService.GenerateRefreshToken();
+                var encodedRefreshToken = _tokenService.EncodeRefreshToken(refreshToken);
+
+                _userRepository.SetUserRefreshToken(user.Username, encodedRefreshToken);
+
+                return Ok(new
+                {
+                    Token = tokenString,
+                    RefreshToken = refreshToken
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during login");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public ActionResult Refresh([FromBody] TokenRefreshRequest request)
+        {
+            try
+            {
+                var principal = _tokenService.GetPrincipalFromExpiredToken(request.Token);
+                var username = principal.Identity.Name;
+
+                var user = _userRepository.GetUserByUsername(username);
+                if (user == null || !_tokenService.ValidateRefreshToken(user.RefreshToken, request.RefreshToken))
+                {
+                    return Unauthorized("Invalid refresh token");
+                }
+
+                var newToken = _tokenService.GenerateNewToken(user);
+                var newRefreshToken = _tokenService.GenerateRefreshToken();
+                var encodedNewRefreshToken = _tokenService.EncodeRefreshToken(newRefreshToken);
+
+                _userRepository.SetUserRefreshToken(username, encodedNewRefreshToken);
+
+                return Ok(new
+                {
+                    Token = newToken,
+                    RefreshToken = newRefreshToken
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during token refresh");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("register")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public ActionResult Register([FromBody] UserRegister userRegister)
+        {
+            try
+            {
+                var username = userRegister.Username?.Trim().ToLower();
+
+                var existingUser = _userRepository.GetUserByUsername(username);
+                if (existingUser != null)
+                {
+                    return Conflict("Username already exists");
+                }
+
+                var user = new User
+                {
+                    Username = username,
+                    Password = BCrypt.Net.BCrypt.HashPassword(userRegister.Password),
+                    FirstName = userRegister.FirstName,
+                    LastName = userRegister.LastName,
+                    Phone = userRegister.Phone,
+                    Role = string.IsNullOrWhiteSpace(userRegister.Role) ? "Staff" : userRegister.Role
+                };
+
+                _userRepository.AddUser(user);
+
+                return Ok(new { Message = "User registered successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during user registration");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult DeleteUserById(int id)
+        {
+            try
+            {
+                var user = _userRepository.GetUserById(id);
+                if (user == null)
+                {
+                    return NotFound($"User with ID {id} not found.");
+                }
+
                 _userRepository.DeleteUser(user);
                 return Ok($"User with ID {id} deleted successfully.");
             }
             catch (Exception ex)
             {
-                // Handle any errors that occur during deletion
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Failed to delete the user with ID {id}. Error: {ex.Message}");
+                _logger.LogError(ex, $"Error occurred while deleting user with ID: {id}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
             }
         }
     }

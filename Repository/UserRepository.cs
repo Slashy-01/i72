@@ -20,6 +20,10 @@ namespace I72_Backend.Repository
         {
             return _context.Users.OrderBy(p => p.Id).ToList();
         }
+        public ICollection<User> GetUserList()
+        {
+            return _context.Users.OrderBy(p => p.Id).ToList();
+        }
 
         public User GetUserByUsername(string username)
         {

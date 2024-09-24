@@ -34,7 +34,6 @@ namespace I72_Backend.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("RefreshToken")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Role")

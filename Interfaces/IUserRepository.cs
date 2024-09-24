@@ -8,6 +8,8 @@ namespace I72_Backend.Interfaces
         // Get a collection of all users
         ICollection<User> GetUsers();
 
+        ICollection<User> GetUserList();
+
         // Get a single user by username
         User GetUserByUsername(string username);
 
