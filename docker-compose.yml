@@ -1,0 +1,14 @@
+﻿services:
+  onboarding_db:
+    image: mysql:8.2.0
+    container_name: onboarding_db
+    ports:
+      - "3306:3306"
+    expose:
+      - 3306
+    environment:
+      - MYSQL_DATABASE=main
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_USER=backend
+      - MYSQL_PASSWORD=backend
+    

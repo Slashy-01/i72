@@ -27,13 +27,15 @@ public class ManagementController : ControllerBase
         _managementService.CreateTables(dto);
         return new JsonResult(Created());
     }
-    
-    [HttpGet]
+    /* [HttpGet("/pie-chart")] */
+    /* [HttpGet("/pie-chart")] */
+    [HttpGet("/bar-chart")]
     [AllowAnonymous]
     public JsonResult Something()
     {
         _logger.Log(LogLevel.Information, "Received request to create tables");
         var res = _repository.QuerySomething();
-        return new JsonResult(Created());
+        var response = new ResponseRestDto(res);
+        return new JsonResult(response);
     }
 }

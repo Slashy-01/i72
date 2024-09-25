@@ -21,7 +21,7 @@ public class ManagementRepository : IManagementRepository
 
         using (var command = _dbContext.Database.GetDbConnection().CreateCommand())
         {
-            command.CommandText = @"SELECT * FROM CUSTOMER_ORDER";
+            command.CommandText = @"SELECT * FROM staff";
             _dbContext.Database.OpenConnection();
 
             using (var reader = command.ExecuteReader())

@@ -1,10 +1,12 @@
-﻿using System.Security.Claims;
+﻿using System;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using I72_Backend.Interfaces;
 using I72_Backend.Model;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
 
 namespace I72_Backend.Services
 {
