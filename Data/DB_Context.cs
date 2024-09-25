@@ -10,7 +10,7 @@ namespace I72_Backend.Data
         }
 
         public DbSet<User> Users { get; set; }
-
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
