@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using I72_Backend.Middleware;
 
 namespace I72_Backend
 {
@@ -44,6 +45,8 @@ namespace I72_Backend
             builder.Services.AddControllers();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<IManagementRepository, ManagementRepository>();
+            builder.Services.AddScoped<IManagementService, ManagementService>();
 
             // Configure the database context with MySQL and automatic server version detection
             builder.Services.AddDbContext<DB_Context>(options =>
@@ -87,7 +90,7 @@ namespace I72_Backend
             });
 
             var app = builder.Build();
-
+            
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -122,6 +125,7 @@ namespace I72_Backend
             }
 
             app.UseHttpsRedirection();
+            app.UseMiddleware<ExceptionMiddleware>();
 
             // Ensure that Authentication is before Authorization
             app.UseAuthentication();
