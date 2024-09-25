@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/I72_Backend.props" />
-</Project>
