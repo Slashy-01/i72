@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using I72_Backend.Data;
 using I72_Backend.Interfaces;
 using I72_Backend.Repository;
@@ -7,6 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace I72_Backend
 {

@@ -1,4 +1,6 @@
-﻿using I72_Backend.Interfaces;
+﻿using System;
+using System.Collections.Generic;
+using I72_Backend.Interfaces;
 using I72_Backend.Model;
 using I72_Backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace I72_Backend.Controllers
 {
