@@ -27,7 +27,9 @@ namespace I72_Backend.Interfaces
         User GetUserById(int id);
         void DeleteUser(User user);
 
-        void UpdateUser(User user); 
+        void UpdateUser(User user);
+        // New Method for Updating User Details
+        void UpdateUserDetails(User user);
         void SetUserRefreshToken(string username, string refreshToken); 
 
     }

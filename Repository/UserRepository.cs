@@ -79,7 +79,21 @@ namespace I72_Backend.Repository
             _context.Users.Update(user);
             _context.SaveChanges();
         }
-
+        
+        public void UpdateUserDetails(User user)
+        {
+            var existingUser = GetUserById(user.Id);
+            if (existingUser != null)
+            {
+                existingUser.FirstName = user.FirstName;
+                existingUser.LastName = user.LastName;
+                existingUser.Phone = user.Phone;
+                existingUser.Role = user.Role;
+                _context.Users.Update(existingUser);
+                _context.SaveChanges();
+            }
+        }
+        
         public void SetUserRefreshToken(string username, string refreshToken)
         {
             var user = GetUserByUsername(username);
@@ -89,6 +103,7 @@ namespace I72_Backend.Repository
                 UpdateUser(user);
             }
         }
+
     }
 }
 
