@@ -87,7 +87,12 @@ namespace I72_Backend.Controllers
         public ActionResult<User> GetUserByUsername(string username)
         {
             try
-            {
+            {                                                   
+                if (string.IsNullOrWhiteSpace(username))    //Added null checks because of failed test cases
+                {
+                    return BadRequest("Invalid username.");
+                }
+
                 var user = _userRepository.GetUserByUsername(username?.Trim().ToLower());
                 if (user == null)
                 {
@@ -110,6 +115,12 @@ namespace I72_Backend.Controllers
         {
             try
             {
+                // Check for null or empty username and password
+                if (string.IsNullOrWhiteSpace(loginRequest.Username) || string.IsNullOrWhiteSpace(loginRequest.Password))
+                {
+                    return BadRequest("Invalid username or password");
+                }
+
                 var user = _userRepository.GetUserByUsername(loginRequest.Username?.Trim().ToLower());
                 if (user == null || !_userRepository.VerifyPassword(loginRequest.Password, user.Password))
                 {
@@ -182,6 +193,15 @@ namespace I72_Backend.Controllers
         {
             try
             {
+                // Check for missing or invalid fields as it caused test case failure
+                if (string.IsNullOrWhiteSpace(userRegister.Username) ||
+                    string.IsNullOrWhiteSpace(userRegister.Password) ||
+                    string.IsNullOrWhiteSpace(userRegister.FirstName) ||
+                    string.IsNullOrWhiteSpace(userRegister.LastName) ||
+                    string.IsNullOrWhiteSpace(userRegister.Phone))
+                {
+                    return BadRequest("Invalid user registration data. All fields are required.");
+                }
                 var username = userRegister.Username?.Trim().ToLower();
 
                 var existingUser = _userRepository.GetUserByUsername(username);
