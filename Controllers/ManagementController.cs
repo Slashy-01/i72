@@ -27,9 +27,9 @@ public class ManagementController : ControllerBase
         return new JsonResult(Created());
     }
     
-    [HttpGet]
+    [HttpPost("get-data")]
     [AllowAnonymous]
-    public JsonResult CreateTables([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
+    public JsonResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
     {
         _logger.Log(LogLevel.Information, "Received request to create tables");
         var queryRes = _managementService.PerformRead(table, pageable, conditions);
