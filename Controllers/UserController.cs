@@ -50,11 +50,17 @@ namespace I72_Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public ActionResult<IEnumerable<UserDetails>> GetUserList()
+        public ActionResult<IEnumerable<UserDetails>> GetUserList([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var users = _userRepository.GetUsers().Select(user => new UserDetails
+                // Ensure page and pageSize are valid
+                page = Math.Max(1, page);
+                pageSize = Math.Max(1, pageSize);
+                
+                // Fetch paginated users
+                var users = _userRepository.GetUsersPaginated(page, pageSize)
+                    .Select(user => new UserDetails
                 {
                     Id = user.Id,
                     Username = user.Username,

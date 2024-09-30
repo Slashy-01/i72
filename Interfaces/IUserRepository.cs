@@ -9,6 +9,8 @@ namespace I72_Backend.Interfaces
         ICollection<User> GetUsers();
 
         ICollection<User> GetUserList();
+        
+        ICollection<User> GetUsersPaginated(int page, int pageSize);
 
         // Get a single user by username
         User GetUserByUsername(string username);
