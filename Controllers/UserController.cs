@@ -256,5 +256,47 @@ namespace I72_Backend.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
             }
         }
+        
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult UpdateUser([FromBody] UpdateUserDto updateUserDto)
+        {
+            try
+            {
+                if (updateUserDto == null || updateUserDto.Id <= 0)
+                {
+                    return BadRequest("Invalid user data.");
+                }
+
+                var existingUser = _userRepository.GetUserById(updateUserDto.Id);
+                if (existingUser == null)
+                {
+                    return NotFound($"User with ID {updateUserDto.Id} not found.");
+                }
+
+                // Update user details
+                existingUser.FirstName = updateUserDto.FirstName;
+                existingUser.LastName = updateUserDto.LastName;
+                existingUser.Phone = updateUserDto.Phone;
+                existingUser.Role = updateUserDto.Role;
+
+                _userRepository.UpdateUserDetails(existingUser);
+
+                return Ok("User updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating user.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        
+        
     }
 }
