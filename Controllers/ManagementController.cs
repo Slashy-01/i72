@@ -73,14 +73,34 @@ public class ManagementController : ControllerBase
         return new JsonResult(Ok(response));
     }
     
+    // [HttpGet("aggregate-chart")]
+    // [AllowAnonymous]
+    // public JsonResult GetAggregateChartData([FromQuery] String table, [FromQuery] String x, [FromQuery] String y, [FromQuery] AggregationType aggregationType)
+    // {
+    //     _logger.Log(LogLevel.Information, "Received request to get bar-chart");
+    //     var queryRes = _managementService.GetBarChartData(table, x, y, aggregationType);
+    //     var response = new ResponseRestDto();
+    //     response.Data = response;
+    //     return new JsonResult(Ok(response));
+    // }
+
     [HttpGet("aggregate-chart")]
     [AllowAnonymous]
-    public JsonResult GetAggregateChartData([FromQuery] String table, [FromQuery] String x, [FromQuery] String y, [FromQuery] AggregationType aggregationType)
+    public IActionResult GetAggregateChartData([FromQuery] string table, [FromQuery] string x, [FromQuery] string y, [FromQuery] AggregationType aggregationType)
     {
         _logger.Log(LogLevel.Information, "Received request to get bar-chart");
+
+        // Call your service to get data
         var queryRes = _managementService.GetBarChartData(table, x, y, aggregationType);
-        var response = new ResponseRestDto();
-        response.Data = response;
-        return new JsonResult(Ok(response));
+
+        // Construct a response DTO
+        var response = new ResponseRestDto
+        {
+            Data = queryRes // Assign actual data here
+        };
+
+        // Return the response
+        return Ok(response); // Directly return Ok with response
     }
+
 }
