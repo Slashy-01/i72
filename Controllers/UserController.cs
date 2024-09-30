@@ -295,8 +295,5 @@ namespace I72_Backend.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
             }
         }
-
-        
-        
     }
 }
