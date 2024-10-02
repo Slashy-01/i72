@@ -50,11 +50,17 @@ namespace I72_Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public ActionResult<IEnumerable<UserDetails>> GetUserList()
+        public ActionResult<IEnumerable<UserDetails>> GetUserList([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
-                var users = _userRepository.GetUsers().Select(user => new UserDetails
+                // Ensure page and pageSize are valid
+                page = Math.Max(1, page);
+                pageSize = Math.Max(1, pageSize);
+                
+                // Fetch paginated users
+                var users = _userRepository.GetUsersPaginated(page, pageSize)
+                    .Select(user => new UserDetails
                 {
                     Id = user.Id,
                     Username = user.Username,
@@ -81,7 +87,12 @@ namespace I72_Backend.Controllers
         public ActionResult<User> GetUserByUsername(string username)
         {
             try
-            {
+            {                                                   
+                if (string.IsNullOrWhiteSpace(username))    //Added null checks because of failed test cases
+                {
+                    return BadRequest("Invalid username.");
+                }
+
                 var user = _userRepository.GetUserByUsername(username?.Trim().ToLower());
                 if (user == null)
                 {
@@ -104,6 +115,12 @@ namespace I72_Backend.Controllers
         {
             try
             {
+                // Check for null or empty username and password
+                if (string.IsNullOrWhiteSpace(loginRequest.Username) || string.IsNullOrWhiteSpace(loginRequest.Password))
+                {
+                    return BadRequest("Invalid username or password");
+                }
+
                 var user = _userRepository.GetUserByUsername(loginRequest.Username?.Trim().ToLower());
                 if (user == null || !_userRepository.VerifyPassword(loginRequest.Password, user.Password))
                 {
@@ -176,6 +193,15 @@ namespace I72_Backend.Controllers
         {
             try
             {
+                // Check for missing or invalid fields as it caused test case failure
+                if (string.IsNullOrWhiteSpace(userRegister.Username) ||
+                    string.IsNullOrWhiteSpace(userRegister.Password) ||
+                    string.IsNullOrWhiteSpace(userRegister.FirstName) ||
+                    string.IsNullOrWhiteSpace(userRegister.LastName) ||
+                    string.IsNullOrWhiteSpace(userRegister.Phone))
+                {
+                    return BadRequest("Invalid user registration data. All fields are required.");
+                }
                 var username = userRegister.Username?.Trim().ToLower();
 
                 var existingUser = _userRepository.GetUserByUsername(username);
@@ -230,5 +256,47 @@ namespace I72_Backend.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
             }
         }
+        
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult UpdateUser([FromBody] UpdateUserDto updateUserDto)
+        {
+            try
+            {
+                if (updateUserDto == null || updateUserDto.Id <= 0)
+                {
+                    return BadRequest("Invalid user data.");
+                }
+
+                var existingUser = _userRepository.GetUserById(updateUserDto.Id);
+                if (existingUser == null)
+                {
+                    return NotFound($"User with ID {updateUserDto.Id} not found.");
+                }
+
+                // Update user details
+                existingUser.FirstName = updateUserDto.FirstName;
+                existingUser.LastName = updateUserDto.LastName;
+                existingUser.Phone = updateUserDto.Phone;
+                existingUser.Role = updateUserDto.Role;
+
+                _userRepository.UpdateUserDetails(existingUser);
+
+                return Ok("User updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating user.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
+        }
+
+        
+        
     }
 }

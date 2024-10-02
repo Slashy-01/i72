@@ -24,7 +24,18 @@ namespace I72_Backend.Repository
         {
             return _context.Users.OrderBy(p => p.Id).ToList();
         }
+        public ICollection<User> GetUsersPaginated(int page, int pageSize)
+        {
+            // Calculate the number of users to skip based on the page and page size
+            int skip = (page - 1) * pageSize;
 
+            // Fetch the users with pagination applied
+            return _context.Users
+                .OrderBy(u => u.Id)
+                .Skip(skip)          // Skip the number of records based on the current page
+                .Take(pageSize)      // Take only the pageSize number of records
+                .ToList();
+        }
         public User GetUserByUsername(string username)
         {
             return _context.Users.SingleOrDefault(u => u.Username == username);
@@ -68,7 +79,21 @@ namespace I72_Backend.Repository
             _context.Users.Update(user);
             _context.SaveChanges();
         }
-
+        
+        public void UpdateUserDetails(User user)
+        {
+            var existingUser = GetUserById(user.Id);
+            if (existingUser != null)
+            {
+                existingUser.FirstName = user.FirstName;
+                existingUser.LastName = user.LastName;
+                existingUser.Phone = user.Phone;
+                existingUser.Role = user.Role;
+                _context.Users.Update(existingUser);
+                _context.SaveChanges();
+            }
+        }
+        
         public void SetUserRefreshToken(string username, string refreshToken)
         {
             var user = GetUserByUsername(username);
@@ -78,6 +103,7 @@ namespace I72_Backend.Repository
                 UpdateUser(user);
             }
         }
+
     }
 }
 
