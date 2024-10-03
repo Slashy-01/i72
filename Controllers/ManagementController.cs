@@ -44,7 +44,7 @@ public class ManagementController : ControllerBase
     [AllowAnonymous]
     public JsonResult InsertData([FromQuery] String table, [FromBody] Dictionary<String, String?> values)
     {
-        _logger.Log(LogLevel.Information, "Received request to create tables");
+        _logger.Log(LogLevel.Information, "Received request to Insert Data");
         var queryRes = _managementService.PerformInsert(table, values);
         var response = new ResponseRestDto();
         response.Message = queryRes;
@@ -55,7 +55,7 @@ public class ManagementController : ControllerBase
     [AllowAnonymous]
     public JsonResult DeleteData([FromQuery] String table, String column, String id)
     {
-        _logger.Log(LogLevel.Information, "Received request to create tables");
+        _logger.Log(LogLevel.Information, "Received request to Delete Data");
         var queryRes = _managementService.PerformDeleteById(table, column, id);
         var response = new ResponseRestDto();
         response.Message = queryRes;
@@ -66,7 +66,7 @@ public class ManagementController : ControllerBase
     [AllowAnonymous]
     public JsonResult UpdateData([FromQuery] String table, [FromBody] UpdateRequestDto updateRequest)
     {
-        _logger.Log(LogLevel.Information, "Received request to create tables");
+        _logger.Log(LogLevel.Information, "Received request to Update Data");
         var queryRes = _managementService.PerformBatchUpdate(table, updateRequest.Where, updateRequest.UpdatedField);
         var response = new ResponseRestDto();
         response.Message = queryRes;
