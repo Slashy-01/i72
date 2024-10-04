@@ -19,4 +19,6 @@ public interface IManagementService
 
     public List<Dictionary<String, object>> PerformRead(String table, PaginationParams pageParams,
         Dictionary<String, String?> conditions);
+
+    public String PerformBatchDelete(String table, Dictionary<String, String?> whereConditions);
 }

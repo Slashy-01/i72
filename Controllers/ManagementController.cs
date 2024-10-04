@@ -29,26 +29,43 @@ public class ManagementController : ControllerBase
     
     [HttpPost("get-data")]
     [AllowAnonymous]
-    public JsonResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
+    public ActionResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
     {
         _logger.Log(LogLevel.Information, "Received request to create tables");
-        var queryRes = _managementService.PerformRead(table, pageable, conditions);
         var response = new ResponseRestDto();
-        response.Message = "Retrieved data";
-        response.Data = queryRes;
-        return new JsonResult(Ok(response));
+        try
+        {
+            var queryRes = _managementService.PerformRead(table, pageable, conditions);
+            response.Data = queryRes;
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            response.Message = e.Message;
+            response.Data = e.Data;
+            return BadRequest(response);
+        }
     }
     /* [HttpGet("/pie-chart")] */
     /* [HttpGet("/pie-chart")] */
     [HttpPost]
     [AllowAnonymous]
-    public JsonResult InsertData([FromQuery] String table, [FromBody] Dictionary<String, String?> values)
+    public ActionResult InsertData([FromQuery] String table, [FromBody] Dictionary<String, String?> values)
     {
         _logger.Log(LogLevel.Information, "Received request to Insert Data");
-        var queryRes = _managementService.PerformInsert(table, values);
         var response = new ResponseRestDto();
-        response.Message = queryRes;
-        return new JsonResult(Ok(response));
+        try
+        {
+            var queryRes = _managementService.PerformInsert(table, values);
+            response.Message = queryRes;
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            response.Message = e.Message;
+            response.Data = e.Data;
+            return BadRequest(response);
+        }
     }
     
     [HttpDelete("{id}")]
@@ -60,6 +77,28 @@ public class ManagementController : ControllerBase
         var response = new ResponseRestDto();
         response.Message = queryRes;
         return new JsonResult(Ok(response));
+    }
+
+    [HttpDelete("batch")]
+    [Authorize(Roles = "Admin,Staff")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult BatchDeleteData([FromQuery] String table, [FromBody] Dictionary<String, String?> conditions)
+    {
+        _logger.Log(LogLevel.Information, "Received request to Delete Data");
+        var response = new ResponseRestDto();
+        try
+        {
+            var queryRes = _managementService.PerformBatchDelete(table, conditions);
+            response.Message = queryRes;
+            return Ok(response);
+        }
+        catch (Exception e)
+        {
+            response.Message = e.Message;
+            response.Data = e.Data;
+            return BadRequest(response);
+        }
     }
     
     [HttpPut("batch")]

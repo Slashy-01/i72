@@ -91,4 +91,15 @@ public class ManagementService : IManagementService
         List<Dictionary<String, object>> res = _repository.ExecuteQuery(query);
         return res;
     }
+
+    public String PerformBatchDelete(String table, Dictionary<String, String?> whereConditions)
+    {
+        String whereConditionString = string.Join(" AND ",
+            whereConditions.Keys.Select(k =>  $"`{k}` LIKE '{whereConditions[k]}'"));
+        String query = 
+            $@"DELETE FROM `{table}` WHERE {whereConditionString}";
+        _logger.LogInformation($"Delete query: {query}");
+        int res = _repository.ExecuteCreateScript(query);
+        return $"{res} row has been deleted";
+    }
 }
