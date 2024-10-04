@@ -5,8 +5,6 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "I72_Backend", "I72_Backend.csproj", "{B8621346-6598-45DE-9F6B-17885D7D3EB8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "I72_Backend.Tests", "..\I72_Backend.Tests\I72_Backend.Tests.csproj", "{54216CF7-1320-4BAF-A510-1725A81BCE84}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
