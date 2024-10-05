@@ -24,7 +24,7 @@ public class ManagementService : IManagementService
             var columnTypes = string.Join(", ", table.ColumnDefinitions.Select(column =>
                 $"{column.Name} {column.Type}{(column.Key ? " PRIMARY KEY" : "")}"
             ));
-            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`({columnTypes});";
+            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`({columnTypes}, updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);";
             sqlScript += createScript;
         }
 
@@ -75,21 +75,17 @@ public class ManagementService : IManagementService
         return $"{res} row has been deleted";
     }
 
-    public List<Dictionary<String, object>> PerformRead(String table, PaginationParams pageParams,
+    public PageableResult PerformRead(String table, PaginationParams pageParams,
         Dictionary<String, String?> conditions)
     {
-        String whereConditionString = string.Join(" AND ",
-            conditions.Keys.Select(k => conditions[k] != null ? $"`{k}` LIKE '%{conditions[k]}%'" : $"`{k}` IS NULL"));
-        if(whereConditionString.Length == 0 )
-        {
-            whereConditionString = "TRUE";
-        }
-
-        String query =
-            @$"SELECT * FROM `{table}` WHERE {whereConditionString} LIMIT {pageParams.PageSize * pageParams.Page}, {pageParams.PageSize}";
-        _logger.LogInformation($"Read query: {query}");
-        List<Dictionary<String, object>> res = _repository.ExecuteQuery(query);
-        return res;
+        List<Dictionary<String, object?>> res = _repository.GetRowsByTable(table, conditions, pageParams);
+        _logger.LogInformation($"Read query get: {res.Count} records");
+        var pageableRes = new PageableResult();
+        pageableRes.Page = pageParams.Page;
+        pageableRes.PageSize = pageParams.PageSize;
+        pageableRes.Rows = res;
+        pageableRes.TotalPage = _repository.GetTotalPages(table, conditions, pageParams);
+        return pageableRes;
     }
 
     public String PerformBatchDelete(String table, Dictionary<String, String?> whereConditions)

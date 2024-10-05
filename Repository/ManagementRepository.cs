@@ -1,5 +1,8 @@
 using I72_Backend.Data;
+using I72_Backend.Entities;
+using I72_Backend.Exceptions;
 using I72_Backend.Interfaces;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 
@@ -16,10 +19,101 @@ public class ManagementRepository : IManagementRepository
         _logger = logger;
     }
 
-    // Execute the read query
-    public List<Dictionary<string, object>> ExecuteQuery(String query)
+    public int GetTotalPages(String table, Dictionary<string, string> filters, PaginationParams pageable)
     {
-        var result = new List<Dictionary<string, object>>();
+        var result = 0;
+        // Build the WHERE clause dynamically based on conditions
+        string whereClause = string.Empty;
+        if (filters != null && filters.Count > 0)
+        {
+            var conditionsList = new List<string>();
+            foreach (var condition in filters)
+            {
+                conditionsList.Add($"{condition.Key} LIKE @{condition.Key}"); // Creates "ColumnName = @ColumnName"
+            }
+            whereClause = "WHERE " + string.Join(" AND ", conditionsList);
+        }
+        using (var command = _dbContext.Database.GetDbConnection().CreateCommand())
+        {
+            command.CommandText = $"SELECT CEIL(COUNT(*) / @PageSize) FROM (SELECT * FROM {table} {whereClause} ORDER BY updated_time DESC) AS query_table;";
+            // Add parameters for pagination
+            command.Parameters.Add(new MySqlParameter("@PageSize", pageable.PageSize));
+            _logger.LogInformation("Executing query: " + command.CommandText);
+            // Add condition parameters
+            if (filters != null && filters.Count > 0)
+            {
+                foreach (var condition in filters)
+                {
+                    command.Parameters.Add(new MySqlParameter($"@{condition.Key}", $"%{condition.Value}%"));
+                }
+            }
+            _dbContext.Database.OpenConnection();
+            result = Convert.ToInt32(command.ExecuteScalar());
+            _dbContext.Database.CloseConnection();
+        }
+
+        return result;
+    }
+    
+    // Execute the read query
+    public List<Dictionary<string, object?>> GetRowsByTable(String table, Dictionary<string, string> filters, PaginationParams pageable)
+    {
+        var result = new List<Dictionary<string, object?>>();
+        // Build the WHERE clause dynamically based on conditions
+        string whereClause = string.Empty;
+        if (filters != null && filters.Count > 0)
+        {
+            var conditionsList = new List<string>();
+            foreach (var condition in filters)
+            {
+                conditionsList.Add($"{condition.Key} LIKE @{condition.Key}"); // Creates "ColumnName = @ColumnName"
+            }
+            whereClause = "WHERE " + string.Join(" AND ", conditionsList);
+        }
+        using (var command = _dbContext.Database.GetDbConnection().CreateCommand())
+        {
+            command.CommandText = $"SELECT * FROM `{table}` {whereClause} ORDER BY updated_time DESC LIMIT @Offset, @PageSize";
+            // Add parameters for pagination
+            command.Parameters.Add(new MySqlParameter("@Offset", pageable.Page * pageable.PageSize));
+            command.Parameters.Add(new MySqlParameter("@PageSize", pageable.PageSize));
+            _logger.LogInformation("Executing query: " + command.CommandText);
+            // Add condition parameters
+            if (filters != null && filters.Count > 0)
+            {
+                foreach (var condition in filters)
+                {
+                    command.Parameters.Add(new MySqlParameter($"@{condition.Key}", $"%{condition.Value}%"));
+                }
+            }
+            _dbContext.Database.OpenConnection();
+            
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var row = new Dictionary<string, object?>();
+
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        var value = reader.GetValue(i);
+                        row[reader.GetName(i)] = value == DBNull.Value ? "NULL" : value;
+                    }
+
+                    result.Add(row);
+                }
+            }
+
+            _dbContext.Database.CloseConnection();
+        }
+
+        return result;
+
+    }
+
+    // Execute the read query
+    public List<Dictionary<string, object?>> ExecuteQuery(String query)
+    {
+        var result = new List<Dictionary<string, object?>>();
 
         using (var command = _dbContext.Database.GetDbConnection().CreateCommand())
         {
@@ -30,11 +124,13 @@ public class ManagementRepository : IManagementRepository
             {
                 while (reader.Read())
                 {
-                    var row = new Dictionary<string, object>();
+                    var row = new Dictionary<string, object?>();
 
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
-                        row[reader.GetName(i)] = reader.GetValue(i);
+                        var value = reader.GetValue(i);
+                        row[reader.GetName(i)] = value == DBNull.Value ? null : value;
+                        _logger.LogInformation(reader.GetName(i), value);
                     }
 
                     result.Add(row);
@@ -66,7 +162,7 @@ public class ManagementRepository : IManagementRepository
 
                 // Log the error or throw an exception, as needed
                 _logger.Log(LogLevel.Error,$"Error: {ex.Message}");
-                throw;
+                throw new AppSqlException(ex.Message, ex.Data);
             }
         }
     }
