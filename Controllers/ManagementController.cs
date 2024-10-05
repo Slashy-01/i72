@@ -1,5 +1,6 @@
 using I72_Backend.Entities;
 using I72_Backend.Entities.Enums;
+using I72_Backend.Exceptions;
 using I72_Backend.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -29,7 +30,7 @@ public class ManagementController : ControllerBase
     }
     
     [HttpPost("get-data")]
-    [AllowAnonymous]
+    [Authorize(Roles = "Admin,Staff")]
     public ActionResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
     {
         _logger.Log(LogLevel.Information, "Received request to create tables");
@@ -37,7 +38,10 @@ public class ManagementController : ControllerBase
         try
         {
             var queryRes = _managementService.PerformRead(table, pageable, conditions);
-            response.Data = queryRes;
+            response.Data = queryRes.Rows;
+            response.Page = queryRes.Page;
+            response.PageSize = queryRes.PageSize;
+            response.TotalPage = queryRes.TotalPage;
             return Ok(response);
         }
         catch (Exception e)
@@ -50,7 +54,7 @@ public class ManagementController : ControllerBase
     /* [HttpGet("/pie-chart")] */
     /* [HttpGet("/pie-chart")] */
     [HttpPost]
-    [AllowAnonymous]
+    [Authorize(Roles = "Admin,Staff")]
     public ActionResult InsertData([FromQuery] String table, [FromBody] Dictionary<String, String?> values)
     {
         _logger.Log(LogLevel.Information, "Received request to Insert Data");
@@ -61,7 +65,7 @@ public class ManagementController : ControllerBase
             response.Message = queryRes;
             return Ok(response);
         }
-        catch (Exception e)
+        catch (AppSqlException e)
         {
             response.Message = e.Message;
             response.Data = e.Data;
@@ -94,7 +98,7 @@ public class ManagementController : ControllerBase
             response.Message = queryRes;
             return Ok(response);
         }
-        catch (Exception e)
+        catch (AppSqlException e)
         {
             response.Message = e.Message;
             response.Data = e.Data;
