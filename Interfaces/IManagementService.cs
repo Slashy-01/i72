@@ -1,5 +1,6 @@
 using I72_Backend.Entities;
 using I72_Backend.Entities.Enums;
+using Microsoft.AspNetCore.Mvc;
 
 namespace I72_Backend.Interfaces;
 
@@ -21,4 +22,7 @@ public interface IManagementService
         Dictionary<String, String?> conditions);
 
     public String PerformBatchDelete(String table, Dictionary<String, String?> whereConditions);
+
+ public List<Dictionary<string, object>> GetAggregateChartData(String table, String columnX, String columnY, AggregationType aggregationType);
+    FileStreamResult GeneratePdfReport(string table, string x, string y, string aggregationFunction);  //to match the service implementation
 }

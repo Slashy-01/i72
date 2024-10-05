@@ -4,6 +4,7 @@ using I72_Backend.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace I72_Backend.Controllers;
 
@@ -141,5 +142,21 @@ public class ManagementController : ControllerBase
         // Return the response
         return Ok(response); // Directly return Ok with response
     }
+
+    [HttpGet("generate-pdf-report")]
+[AllowAnonymous]
+public IActionResult GeneratePdfReport([FromQuery] string table, [FromQuery] string x, [FromQuery] string y, [FromQuery] string aggregationFunction)
+{
+    try
+    {
+        // Call the service to generate the PDF report with dynamic parameters
+        return _managementService.GeneratePdfReport(table, x, y, aggregationFunction);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error while generating PDF report");
+        return StatusCode(500, "An error occurred while processing your request.");
+    }
+}
 
 }

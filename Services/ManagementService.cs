@@ -2,6 +2,12 @@ using I72_Backend.Entities;
 using I72_Backend.Entities.Enums;
 using I72_Backend.Interfaces;
 using Mysqlx.Datatypes;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace I72_Backend.Services;
 
@@ -102,4 +108,82 @@ public class ManagementService : IManagementService
         int res = _repository.ExecuteCreateScript(query);
         return $"{res} row has been deleted";
     }
+
+   public FileStreamResult GeneratePdfReport(string table, string x, string y, string aggregationFunction)
+{
+    try
+    {
+        // Define the path to a temporary file
+        var tempFilePath = Path.Combine(Path.GetTempPath(), $"DashboardReport_{Guid.NewGuid()}.pdf");
+
+        // Write the PDF content to the temp file
+        using (var writer = new PdfWriter(tempFilePath))
+        {
+            var pdf = new PdfDocument(writer);
+            var document = new Document(pdf);
+
+            // Add content to the PDF (Title and Date)
+            document.Add(new Paragraph("Dashboard Report"));
+            document.Add(new Paragraph($"Generated on: {DateTime.Now}"));
+
+            // Determine the aggregation type based on user input
+            AggregationType aggregationType = aggregationFunction switch
+            {
+                "Sum" => AggregationType.SUM,
+                "Count" => AggregationType.COUNT,
+                "AVG" => AggregationType.AVG,
+                "Max" => AggregationType.MAX,
+                "Min" => AggregationType.MIN,
+                _ => AggregationType.SUM // Default to SUM if not provided
+            };
+
+            // Fetching data from the dashboard based on dynamic inputs
+            var chartData = GetAggregateChartData(table, x, y, aggregationType);
+
+            // Add fetched data as a table to the PDF
+            Table pdfTable = new Table(3); // 3 columns: X, Y, Aggregated Value
+            pdfTable.AddHeaderCell("X Value");
+            pdfTable.AddHeaderCell("Y Value");
+            pdfTable.AddHeaderCell("Aggregated Value");
+
+            // Populate the table with chart data
+            foreach (var row in chartData)
+            {
+                pdfTable.AddCell(new Cell().Add(new Paragraph(row[x].ToString())));
+                pdfTable.AddCell(new Cell().Add(new Paragraph(row[y].ToString())));
+                pdfTable.AddCell(new Cell().Add(new Paragraph(row["AggregatedValue"].ToString())));
+            }
+
+            document.Add(pdfTable); // Add table to the document
+            document.Close();  // Close the document to finalize it
+        }
+
+        // Return the PDF file as a FileStreamResult for download
+        var stream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+        return new FileStreamResult(stream, "application/pdf")
+        {
+            FileDownloadName = "dashboard-report.pdf"
+        };
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error while generating PDF report");
+        throw new Exception("Error while generating PDF", ex);
+    }
+}
+
+
+
+       public List<Dictionary<string, object>> GetAggregateChartData(String table, String columnX, String columnY, AggregationType aggregationType)
+{
+    // Construct the SQL query dynamically
+    String query = $@"SELECT {columnX}, {aggregationType}({columnY}) AS AggregatedValue FROM {table} GROUP BY {columnX}";
+    _logger.LogInformation($"Get aggregate chart query: {query}");
+
+    // Execute the query and return the results
+    return _repository.ExecuteQuery(query);
+}
+
+
+         
 }
