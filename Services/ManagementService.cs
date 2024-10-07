@@ -35,7 +35,7 @@ public class ManagementService : IManagementService
     public List<Dictionary<string, object>> GetBarChartData(String table, String columnX, String columnY,
         AggregationType aggregationType)
     {
-        String query = $@"SELECT {columnX}, {aggregationType}({columnY}) FROM {table} GROUP BY {columnX}";
+        String query = $@"SELECT {columnX}, {aggregationType}({columnY}) FROM {table} GROUP BY {columnX} HAVING {columnX} IS NOT NULL;";
         _logger.LogInformation($"Get bar chart query: {query}");
         return _repository.ExecuteQuery(query);
     }
