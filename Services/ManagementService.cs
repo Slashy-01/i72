@@ -24,7 +24,13 @@ public class ManagementService : IManagementService
             var columnTypes = string.Join(", ", table.ColumnDefinitions.Select(column =>
                 $"{column.Name} {column.Type}{(column.Key ? " PRIMARY KEY" : "")}"
             ));
-            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`({columnTypes}, updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);";
+            var constraints = "";
+            if (table.Constraints != null && table.Constraints.Count != 0)
+            {
+                constraints = "," + string.Join(", ", table.Constraints);
+            }
+            
+            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`(updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,{columnTypes}{constraints} );";
             sqlScript += createScript;
         }
 
