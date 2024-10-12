@@ -107,13 +107,23 @@ public class ManagementController : ControllerBase
     
     [HttpPut("batch")]
     [AllowAnonymous]
-    public JsonResult UpdateData([FromQuery] String table, [FromBody] UpdateRequestDto updateRequest)
+    public ActionResult UpdateData([FromQuery] String table, [FromBody] UpdateRequestDto updateRequest)
     {
         _logger.Log(LogLevel.Information, "Received request to Update Data");
-        var queryRes = _managementService.PerformBatchUpdate(table, updateRequest.Where, updateRequest.UpdatedField);
         var response = new ResponseRestDto();
-        response.Message = queryRes;
-        return new JsonResult(Ok(response));
+        try
+        {
+            var queryRes =
+                _managementService.PerformBatchUpdate(table, updateRequest.Where, updateRequest.UpdatedField);
+            response.Message = queryRes;
+            return Ok(response);
+        }
+        catch (AppSqlException e)
+        {
+            response.Message = e.Message;
+            response.Data = e.Data;
+            return BadRequest(response);
+        }
     }
     
     // [HttpGet("aggregate-chart")]
