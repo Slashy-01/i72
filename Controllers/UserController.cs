@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using I72_Backend.Entities;
 
 namespace I72_Backend.Controllers
 {
@@ -50,16 +51,35 @@ namespace I72_Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public ActionResult<IEnumerable<UserDetails>> GetUserList([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public ActionResult<IEnumerable<UserDetails>> GetUserList([FromQuery] bool all = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
+                if (all)
+                {
+					var userAll = _userRepository.GetUsers().Select(user => new UserDetails
+					{
+						Id = user.Id,
+						Username = user.Username,
+						FirstName = user.FirstName,
+						LastName = user.LastName,
+						Phone = user.Phone,
+						Role = user.Role
+					});
+					return Ok(userAll);
+				}
                 // Ensure page and pageSize are valid
                 page = Math.Max(1, page);
                 pageSize = Math.Max(1, pageSize);
-                
-                // Fetch paginated users
-                var users = _userRepository.GetUsersPaginated(page, pageSize)
+
+				// Fetch total number of users
+				var totalUsers = _userRepository.GetUsers().Count;
+
+				// Calculate total pages
+				var totalPages = (int)Math.Ceiling((double)totalUsers / pageSize);
+
+				// Fetch paginated users
+				var users = _userRepository.GetUsersPaginated(page, pageSize)
                     .Select(user => new UserDetails
                 {
                     Id = user.Id,
@@ -68,9 +88,17 @@ namespace I72_Backend.Controllers
                     LastName = user.LastName,
                     Phone = user.Phone,
                     Role = user.Role
-                });
-                return Ok(users);
-            }
+                }).ToList();
+				//return Ok(users);
+				return Ok(new ResponseRestDto
+				{
+					Data = users,
+					Message = "User list retrieved successfully.",
+					Page = page,
+					PageSize = pageSize,
+					TotalPage = totalPages
+				});
+			}
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching user list");
