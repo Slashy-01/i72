@@ -19,6 +19,8 @@ public class ManagementController : ControllerBase
         _logger = logger;
         _managementService = managementService;
     }
+    
+    /* Endpoint to create table on the compile time of the app */
     [HttpPost("create-tables")]
     [AllowAnonymous]
     public JsonResult CreateTables([FromBody] CreateListTablesDto dto)
@@ -28,6 +30,7 @@ public class ManagementController : ControllerBase
         return new JsonResult(Created());
     }
     
+    /* Read data from the database (Search functionality of the app) */
     [HttpPost("get-data")]
     [Authorize(Roles = "Admin,Staff")]
     public ActionResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
@@ -50,8 +53,8 @@ public class ManagementController : ControllerBase
             return BadRequest(response);
         }
     }
-    /* [HttpGet("/pie-chart")] */
-    /* [HttpGet("/pie-chart")] */
+   
+    /* Insert operation endpoint */
     [HttpPost]
     [Authorize(Roles = "Admin,Staff")]
     public ActionResult InsertData([FromQuery] String table, [FromBody] Dictionary<String, String?> values)
@@ -72,6 +75,7 @@ public class ManagementController : ControllerBase
         }
     }
     
+    /* Delete record in a table by id */
     [HttpDelete("{id}")]
     [AllowAnonymous]
     public JsonResult DeleteData([FromQuery] String table, String column, String id)
@@ -83,6 +87,7 @@ public class ManagementController : ControllerBase
         return new JsonResult(Ok(response));
     }
 
+    /* Endpoint for batch delete */
     [HttpDelete("batch")]
     [Authorize(Roles = "Admin,Staff")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -105,28 +110,29 @@ public class ManagementController : ControllerBase
         }
     }
     
+    /* Endpoint for batch update */
     [HttpPut("batch")]
     [AllowAnonymous]
-    public JsonResult UpdateData([FromQuery] String table, [FromBody] UpdateRequestDto updateRequest)
+    public ActionResult UpdateData([FromQuery] String table, [FromBody] UpdateRequestDto updateRequest)
     {
         _logger.Log(LogLevel.Information, "Received request to Update Data");
-        var queryRes = _managementService.PerformBatchUpdate(table, updateRequest.Where, updateRequest.UpdatedField);
         var response = new ResponseRestDto();
-        response.Message = queryRes;
-        return new JsonResult(Ok(response));
+        try
+        {
+            var queryRes =
+                _managementService.PerformBatchUpdate(table, updateRequest.Where, updateRequest.UpdatedField);
+            response.Message = queryRes;
+            return Ok(response);
+        }
+        catch (AppSqlException e)
+        {
+            response.Message = e.Message;
+            response.Data = e.Data;
+            return BadRequest(response);
+        }
     }
-    
-    // [HttpGet("aggregate-chart")]
-    // [AllowAnonymous]
-    // public JsonResult GetAggregateChartData([FromQuery] String table, [FromQuery] String x, [FromQuery] String y, [FromQuery] AggregationType aggregationType)
-    // {
-    //     _logger.Log(LogLevel.Information, "Received request to get bar-chart");
-    //     var queryRes = _managementService.GetBarChartData(table, x, y, aggregationType);
-    //     var response = new ResponseRestDto();
-    //     response.Data = response;
-    //     return new JsonResult(Ok(response));
-    // }
 
+    /* Endpoint for chart data */
     [HttpGet("aggregate-chart")]
     [AllowAnonymous]
     public IActionResult GetAggregateChartData([FromQuery] string table, [FromQuery] string x, [FromQuery] string y, [FromQuery] AggregationType aggregationType)

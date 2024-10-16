@@ -16,15 +16,25 @@ public class ManagementService : IManagementService
         _logger = logger;
     }
 
+    /* Function to create a new table if not exists in the database */
     public void CreateTables(CreateListTablesDto dto)
     {
         var sqlScript = @"";
         foreach (var table in dto.Menu)
         {
+            // Aggregate column types of the schema
             var columnTypes = string.Join(", ", table.ColumnDefinitions.Select(column =>
                 $"{column.Name} {column.Type}{(column.Key ? " PRIMARY KEY" : "")}"
             ));
-            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`({columnTypes}, updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);";
+            
+            // Add constraints for the query
+            var constraints = "";
+            if (table.Constraints != null && table.Constraints.Count != 0)
+            {
+                constraints = "," + string.Join(", ", table.Constraints);
+            }
+            // Finalize the create script
+            var createScript = $"CREATE TABLE IF NOT EXISTS `{table.TableName}`(updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,{columnTypes}{constraints} );";
             sqlScript += createScript;
         }
 
@@ -32,14 +42,17 @@ public class ManagementService : IManagementService
         _repository.ExecuteCreateScript(sqlScript);
     }
 
+    /* Get bar chart aggregate data */
     public List<Dictionary<string, object>> GetBarChartData(String table, String columnX, String columnY,
         AggregationType aggregationType)
     {
+        // Create the query for execution
         String query = $@"SELECT {columnX}, {aggregationType}({columnY}) FROM {table} GROUP BY {columnX} HAVING {columnX} IS NOT NULL;";
         _logger.LogInformation($"Get bar chart query: {query}");
         return _repository.ExecuteQuery(query);
     }
 
+    /* Perform insert for a specific table inside the database */
     public String PerformInsert(String table, Dictionary<String, String> values)
     {
         // Generate the columns part of the query by joining the keys of the dictionary
@@ -55,11 +68,14 @@ public class ManagementService : IManagementService
         return $"{insertedRows} rows have been inserted";
     }
 
+    /* Perform batch update if match records */
     public String PerformBatchUpdate(String table, Dictionary<String, String?> whereCondition,
         Dictionary<String, String?> updateFields)
     {
+        // Where condition for the query
         String whereConditionString =
             string.Join("AND", whereCondition.Keys.Select(k => $"`{k}` = '{whereCondition[k]}'"));
+        // Update the corresponding fields
         String setStatementString = string.Join(",", updateFields.Keys.Select(k => $"`{k}` = '{updateFields[k]}'"));
         String query = $@"UPDATE `{table}` SET {setStatementString} WHERE {whereConditionString};";
         _logger.LogInformation($"Batch update query: {query}");
@@ -75,6 +91,7 @@ public class ManagementService : IManagementService
         return $"{res} row has been deleted";
     }
 
+    /* Search method to read from the database */
     public PageableResult PerformRead(String table, PaginationParams pageParams,
         Dictionary<String, String?> conditions)
     {
@@ -88,10 +105,12 @@ public class ManagementService : IManagementService
         return pageableRes;
     }
 
+    /* Delete a collection of records in the coresponding table */
     public String PerformBatchDelete(String table, Dictionary<String, String?> whereConditions)
     {
+        // Prepare where condition
         String whereConditionString = string.Join(" AND ",
-            whereConditions.Keys.Select(k =>  $"`{k}` LIKE '{whereConditions[k]}'"));
+            whereConditions.Keys.Select(k =>  $"`{k}` = '{whereConditions[k]}'"));
         String query = 
             $@"DELETE FROM `{table}` WHERE {whereConditionString}";
         _logger.LogInformation($"Delete query: {query}");
