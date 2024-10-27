@@ -2,7 +2,9 @@ using I72_Backend.Entities;
 using I72_Backend.Entities.Enums;
 
 namespace I72_Backend.Interfaces;
-
+/*
+ * The interface layer of the management service used for handling business logic
+ */
 public interface IManagementService
 {
     public void CreateTables(CreateListTablesDto dto);

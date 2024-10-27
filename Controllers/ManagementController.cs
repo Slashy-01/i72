@@ -35,10 +35,11 @@ public class ManagementController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public ActionResult GetData([FromQuery] String table, [FromQuery] PaginationParams pageable ,[FromBody] Dictionary<String, String?> conditions)
     {
-        _logger.Log(LogLevel.Information, "Received request to create tables");
+        _logger.Log(LogLevel.Information, "Received request to retrieve data from the tables");
         var response = new ResponseRestDto();
         try
         {
+            // Handling successful query
             var queryRes = _managementService.PerformRead(table, pageable, conditions);
             response.Data = queryRes.Rows;
             response.Page = queryRes.Page;

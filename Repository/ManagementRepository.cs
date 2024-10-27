@@ -19,6 +19,7 @@ public class ManagementRepository : IManagementRepository
         _logger = logger;
     }
 
+    /* Function implemented to calculate the total pages of the query */
     public int GetTotalPages(String table, Dictionary<string, string> filters, PaginationParams pageable)
     {
         var result = 0;
@@ -33,6 +34,7 @@ public class ManagementRepository : IManagementRepository
             }
             whereClause = "WHERE " + string.Join(" AND ", conditionsList);
         }
+        // Open the database connection and create a command
         using (var command = _dbContext.Database.GetDbConnection().CreateCommand())
         {
             command.CommandText = $"SELECT CEIL(COUNT(*) / @PageSize) FROM (SELECT * FROM {table} {whereClause} ORDER BY updated_time DESC) AS query_table;";
@@ -82,17 +84,19 @@ public class ManagementRepository : IManagementRepository
             {
                 foreach (var condition in filters)
                 {
+                    // Add all the parameter into the query
                     command.Parameters.Add(new MySqlParameter($"@{condition.Key}", $"%{condition.Value}%"));
                 }
             }
             _dbContext.Database.OpenConnection();
             
+            // Retrieving the data and convert it into a corresponding object
             using (var reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
                     var row = new Dictionary<string, object?>();
-
+                    // Interate through the query result
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
                         var value = reader.GetValue(i);

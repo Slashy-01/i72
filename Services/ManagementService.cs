@@ -5,6 +5,10 @@ using Mysqlx.Datatypes;
 
 namespace I72_Backend.Services;
 
+/* The management service is responsible for handling relevant dynamic inventory operation
+ * Please note that the SQL native query is needed to use
+ * Note that a Dictionary was utilized to enable dynamic query
+ */
 public class ManagementService : IManagementService
 {
     private readonly IManagementRepository _repository;

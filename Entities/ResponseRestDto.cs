@@ -2,6 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace I72_Backend.Entities;
 
+/*
+ * The standard response object of the application
+ */
 public class ResponseRestDto
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
