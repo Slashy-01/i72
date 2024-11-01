@@ -13,7 +13,7 @@ namespace I72_Backend
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +30,7 @@ namespace I72_Backend
                         ValidIssuer = builder.Configuration["Jwt:Issuer"],
                         ValidAudience = builder.Configuration["Jwt:Audience"],
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-                        ClockSkew = TimeSpan.Zero // Eliminate clock skew to prevent token expiry issues
+                        ClockSkew = TimeSpan.Zero
                     };
                 });
 
@@ -48,13 +48,12 @@ namespace I72_Backend
             builder.Services.AddScoped<IManagementRepository, ManagementRepository>();
             builder.Services.AddScoped<IManagementService, ManagementService>();
 
-            // Configure the database context with MySQL and automatic server version detection
+            // Configure the database context
             builder.Services.AddDbContext<DB_Context>(options =>
             {
                 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
             });
-
 
             // API Explorer and Swagger Configuration
             builder.Services.AddEndpointsApiExplorer();
@@ -62,7 +61,6 @@ namespace I72_Backend
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
 
-                // Add JWT Bearer token support in Swagger
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -90,8 +88,9 @@ namespace I72_Backend
             });
 
             var app = builder.Build();
-            
-            using (var scope = app.Services.CreateScope())
+
+            // Database initialization and seeding
+            await using (var scope = app.Services.CreateAsyncScope())
             {
                 var services = scope.ServiceProvider;
                 try
@@ -99,16 +98,17 @@ namespace I72_Backend
                     var context = services.GetRequiredService<DB_Context>();
                     var logger = services.GetRequiredService<ILogger<Program>>();
 
-                    logger.LogInformation("Ensuring database is created...");
-                    context.Database.EnsureCreated();
+                    logger.LogInformation("Starting database initialization and seeding...");
 
-                    logger.LogInformation("Applying any pending migrations...");
-                    context.Database.Migrate();
-
-                    logger.LogInformation("Seeding data...");
-                    context.EnsureSeedData();
-
-                    logger.LogInformation("Database setup completed successfully.");
+                    var (success, message) = await context.EnsureDataExistsAsync();
+                    if (!success)
+                    {
+                        logger.LogError($"Database seeding failed: {message}");
+                    }
+                    else
+                    {
+                        logger.LogInformation($"Database setup: {message}");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -127,13 +127,12 @@ namespace I72_Backend
             app.UseHttpsRedirection();
             app.UseMiddleware<ExceptionMiddleware>();
 
-            // Ensure that Authentication is before Authorization
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

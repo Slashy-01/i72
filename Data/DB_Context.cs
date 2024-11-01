@@ -1,5 +1,7 @@
 ﻿using I72_Backend.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -34,22 +36,61 @@ namespace I72_Backend.Data
             });
         }
 
-        public void EnsureSeedData()
+        public async Task<(bool success, string message)> EnsureDataExistsAsync()
         {
-            _logger.LogInformation("Starting EnsureSeedData method...");
+            _logger.LogInformation("Starting EnsureDataExistsAsync method...");
 
             try
             {
+                // Check database connection
                 if (!Database.CanConnect())
                 {
-                    _logger.LogError("Cannot connect to the database.");
-                    return;
+                    _logger.LogInformation("Database doesn't exist, creating...");
+                    await Database.EnsureCreatedAsync();
                 }
 
-                _logger.LogInformation("Successfully connected to the database.");
+                // Check if tables exist
+                var databaseCreator = Database.GetService<IRelationalDatabaseCreator>();
+                if (!databaseCreator.HasTables())
+                {
+                    _logger.LogInformation("Tables don't exist, creating...");
+                    databaseCreator.CreateTables();
+                    return await SeedDataAsync("Tables created and data seeded successfully.");
+                }
 
+                // Check if Users table is empty
+                if (!await Users.AnyAsync())
+                {
+                    _logger.LogInformation("Users table is empty, seeding data...");
+                    return await SeedDataAsync("Data seeded successfully into empty table.");
+                }
+
+                _logger.LogInformation("Tables and data already exist, no action needed.");
+                return (true, "Database is already populated.");
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = $"An error occurred: {ex.Message}";
+                _logger.LogError(ex, errorMessage);
+                return (false, errorMessage);
+            }
+        }
+
+        private async Task<(bool success, string message)> SeedDataAsync(string successMessage)
+        {
+            try
+            {
                 var seedUsers = new List<User>
                 {
+                    new User
+                    {
+                        Username = "admin",
+                        Password = BCrypt.Net.BCrypt.HashPassword("123456"),
+                        FirstName = "System",
+                        LastName = "Admin",
+                        Phone = "0501234567",
+                        Role = "Admin"
+                    },
                     new User
                     {
                         Username = "mad@max",
@@ -61,34 +102,59 @@ namespace I72_Backend.Data
                     },
                     new User
                     {
-                        Username = "Ali@1",
-                        Password = BCrypt.Net.BCrypt.HashPassword("456789"),
+                        Username = "Ali11",
+                        Password = BCrypt.Net.BCrypt.HashPassword("123456"),
                         FirstName = "Ali",
                         LastName = "Khan",
                         Phone = "0501315487",
                         Role = "Staff"
+                    },
+                    new User
+                    {
+                        Username = "staff",
+                        Password = BCrypt.Net.BCrypt.HashPassword("123456"),
+                        FirstName = "System",
+                        LastName = "Staff",
+                        Phone = "0507654321",
+                        Role = "Staff"
                     }
                 };
 
-                foreach (var seedUser in seedUsers)
-                {
-                    if (!Users.Any(u => u.Username == seedUser.Username))
-                    {
-                        Users.Add(seedUser);
-                        _logger.LogInformation($"Adding seed user: {seedUser.Username}");
-                    }
-                    else
-                    {
-                        _logger.LogInformation($"Seed user already exists: {seedUser.Username}");
-                    }
-                }
+                await Users.AddRangeAsync(seedUsers);
+                await SaveChangesAsync();
 
-                var entriesWritten = SaveChanges();
-                _logger.LogInformation($"Seed data operation completed. {entriesWritten} new entries written.");
+                _logger.LogInformation($"Successfully seeded {seedUsers.Count} users.");
+                return (true, successMessage);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while seeding the database.");
+                var errorMessage = $"Failed to seed data: {ex.Message}";
+                _logger.LogError(ex, errorMessage);
+                return (false, errorMessage);
+            }
+        }
+
+        
+        public async Task<(bool success, string message)> ReseedDataAsync()
+        {
+            try
+            {
+                // Remove existing data
+                if (await Users.AnyAsync())
+                {
+                    Users.RemoveRange(Users);
+                    await SaveChangesAsync();
+                    _logger.LogInformation("Existing data removed successfully.");
+                }
+
+                // Reseed the data
+                return await SeedDataAsync("Data reseeded successfully.");
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = $"Failed to reseed data: {ex.Message}";
+                _logger.LogError(ex, errorMessage);
+                return (false, errorMessage);
             }
         }
     }
